@@ -1,4 +1,4 @@
-package com.samples.servlet;
+package com.login.demo;
 
 import java.io.IOException;
 
@@ -6,8 +6,10 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -16,18 +18,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-@WebServlet("/deleteuserservlet")
-public class DeleteUserServlet extends HttpServlet {
+@WebServlet("/loginservlet") 
+public class loginservlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
-	Connection conn = null;
+	Connection conn;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 
 		try {
 			ServletContext context = config.getServletContext();
-			System.out.println("ReadUserServlet.init() method. DB connection created");
 			Class.forName("com.mysql.jdbc.Driver");
 			conn = DriverManager.getConnection(context.getInitParameter("dburl"), context.getInitParameter("dbuname"),
 					context.getInitParameter("dbpass"));
@@ -40,18 +41,27 @@ public class DeleteUserServlet extends HttpServlet {
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		response.setContentType("text/html");
 		String email = request.getParameter("email");
-
-		try (PreparedStatement st = conn.prepareStatement("delete * from user where email= ?");) {
-
+		String password = request.getParameter("password");
+		
+		try (PreparedStatement st = conn.prepareStatement("select * from user where email = ? and password =?")){
 			st.setString(1, email);
-			int rowsDeleted = st.executeUpdate();
-			System.out.println("Number of rows deleted : " + rowsDeleted);
-
-			PrintWriter pw = response.getWriter();
-			pw.println("User successfully deleted");
-			pw.write("<p><a href=\"userHome.html\">Home</a></p>");
+			st.setString(2, password);
+			
+			ResultSet rs = st.executeQuery();
+			
+			if(rs.next()) {
+				RequestDispatcher rd = request.getRequestDispatcher("homeservlet");
+				request.setAttribute("message", "user authenticated welcome to interconnection");
+				rd.forward(request, response);
+			} else {
+				PrintWriter pw = response.getWriter();
+				response.setContentType("text/html");
+				pw.println("Login Failed");
+				
+				RequestDispatcher rd = request.getRequestDispatcher("login.html");
+				rd.include(request, response);
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -60,7 +70,7 @@ public class DeleteUserServlet extends HttpServlet {
 
 	@Override
 	public void destroy() {
-		System.out.println("DeleteUserServlet.destroy() method. DB connected closed");
+		System.out.println("AddUserServlet.destroy() method. DB connected closed");
 	}
 
 }
