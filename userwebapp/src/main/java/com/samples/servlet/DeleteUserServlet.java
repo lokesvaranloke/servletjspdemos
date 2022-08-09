@@ -43,7 +43,7 @@ public class DeleteUserServlet extends HttpServlet {
 		response.setContentType("text/html");
 		String email = request.getParameter("email");
 
-		try (PreparedStatement st = conn.prepareStatement("delete * from user where email= ?");) {
+		try (PreparedStatement st = conn.prepareStatement("delete from user where email= ?");) {
 
 			st.setString(1, email);
 			int rowsDeleted = st.executeUpdate();
